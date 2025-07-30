@@ -1,4 +1,3 @@
-// src/app/api/stats/route.ts
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import ShortUrl from '@/lib/model';
