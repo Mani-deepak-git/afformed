@@ -1,95 +1,104 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+import { useState } from 'react';
+import { Button, TextField, Typography, Box } from '@mui/material';
+type FormEntry = {
+  url: string;
+  validity: string;
+  shortcode: string;
+};
+type ShortURLResponse = {
+  shortLink: string;
+  expiry: string;
+};
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [form, setForm] = useState<FormEntry[]>([
+    { url: '', validity: '', shortcode: '' },
+  ]);
+  const [results, setResults] = useState<ShortURLResponse[]>([]);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+  const handleChange = (index: number, field: keyof FormEntry, value: string) => {
+    const updated = [...form];
+    updated[index][field] = value;
+    setForm(updated);
+  };
+
+  const addField = () => {
+    if (form.length < 5)
+      setForm([...form, { url: '', validity: '', shortcode: '' }]);
+  };
+  const handleSubmit = async () => {
+    try {
+      const res = await Promise.all(
+        form.map(async (entry) => {
+          const resp = await fetch('/shorturls', {
+            method: 'POST',
+            body: JSON.stringify({
+              url: entry.url,
+              validity: parseInt(entry.validity) || 30,
+              shortcode: entry.shortcode,
+            }),
+            headers: { 'Content-Type': 'application/json' },
+          });
+          return await resp.json();
+        })
+      );
+      setResults(res);
+    } catch (err) {
+      console.error('Submission error:', err);
+    }
+  };
+
+  return (
+    <Box p={4}>
+      <Typography variant="h4" gutterBottom>
+        URL Shortener
+      </Typography>
+
+      {form.map((entry, i) => (
+        <Box key={i} mt={2}>
+          <TextField
+            label="Long URL"
+            fullWidth
+            margin="normal"
+            value={entry.url}
+            onChange={(e) => handleChange(i, 'url', e.target.value)}
           />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <TextField
+            label="Validity (min)"
+            type="number"
+            margin="normal"
+            value={entry.validity}
+            onChange={(e) => handleChange(i, 'validity', e.target.value)}
           />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+          <TextField
+            label="Shortcode (optional)"
+            margin="normal"
+            value={entry.shortcode}
+            onChange={(e) => handleChange(i, 'shortcode', e.target.value)}
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </Box>
+      ))}
+
+      <Box mt={2}>
+        <Button variant="outlined" onClick={addField} sx={{ mr: 2 }}>
+          Add Field
+        </Button>
+        <Button variant="contained" onClick={handleSubmit}>
+          Shorten URLs
+        </Button>
+      </Box>
+      {results.map((res, idx) => (
+        <Box key={idx} mt={3}>
+          <Typography>
+            Short URL:{' '}
+            <a href={res.shortLink} target="_blank" rel="noopener noreferrer">
+              {res.shortLink}
+            </a>
+          </Typography>
+          <Typography>Expires: {res.expiry}</Typography>
+        </Box>
+      ))}
+    </Box>
   );
 }
