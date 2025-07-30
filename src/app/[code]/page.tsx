@@ -10,7 +10,7 @@ export default async function RedirectPage({ params }: { params: { code: string 
     return <p>Expired or not found</p>;
   }
 
- record.clicks.push({ timestamp: new Date(), location: 'India' }); // or use geo lookup
+ record.clicks.push({ timestamp: new Date(), location: 'India' }); 
 await record.save();
 
 
